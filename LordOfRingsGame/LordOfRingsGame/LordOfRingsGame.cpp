@@ -81,13 +81,14 @@ enum GameEntityType {
     Armoury,
     Infantary,
     Cavalry,
-    Artillery
+    Artillery,
+    Empty
 };
 
 void displayMainMenu();
 void startNewGame();
 void initializeGrid(struct Cell grid[ROWS][COLS]);
-void printGrid(struct Cell grid[ROWS][COLS]);
+void printGrid(struct Cell grid[ROWS][COLS], Player player);
 void initializePlayers(struct Player players[MAX_PLAYERS]);
 void chooseSide(struct Player players[MAX_PLAYERS]);
 void playGame(struct Cell grid[ROWS][COLS], struct Player players[MAX_PLAYERS]);
@@ -98,7 +99,7 @@ void printBuildOptions();
 void printMilitaryOptions();
 GameEntity* gameEntityToPrint(struct Player player, enum GameEntityType entityType);
 GameEntityType selectEntitytype(int entityType, int userSelection);
-GameEntityType printEntitiesAndGetType(struct Cell grid[ROWS][COLS]);
+GameEntityType printTurnOptionsAndGetEntityType(struct Cell grid[ROWS][COLS]);
 
 int main() {
 
@@ -158,14 +159,14 @@ void initializeGrid(struct Cell grid[ROWS][COLS]) {
 
     for (int i = 0; i < ROWS; ++i) {
         for (int j = 0; j < COLS; ++j) {
-            grid[i][j].gameEntity = NULL; 
+            grid[i][j].gameEntity = NULL;
         }
     }
 }
 
-void printGrid(struct Cell grid[ROWS][COLS]) {
+void printGrid(struct Cell grid[ROWS][COLS], Player player) {
     system("cls");
-    printf("   "); 
+    printf("   ");
 
     for (char c = 'A'; c <= 'Z'; ++c) {
         printf(" %c ", c);
@@ -173,7 +174,7 @@ void printGrid(struct Cell grid[ROWS][COLS]) {
     printf("\n");
 
     for (int i = 0; i < ROWS; ++i) {
-        printf("%2d ", i); 
+        printf("%2d ", i);
 
         for (int j = 0; j < COLS; ++j) {
             if (grid[i][j].gameEntity != NULL) {
@@ -181,11 +182,13 @@ void printGrid(struct Cell grid[ROWS][COLS]) {
                 printf("[%d: %s]", grid[i][j].gameEntity->health, grid[i][j].gameEntity->symbol);
             }
             else {
-                printf("[ ]"); 
+                printf("[ ]");
             }
         }
         printf("\n");
-    }   
+    }
+
+    printf("Player %d coins: %d", player.playerType, player.coins);
 }
 
 void initializePlayers(struct Player players[MAX_PLAYERS]) {
@@ -221,38 +224,46 @@ void chooseSide(struct Player players[MAX_PLAYERS]) {
 }
 
 void playGame(struct Cell grid[ROWS][COLS], struct Player players[MAX_PLAYERS]) {
-   
-    int playerIndex = 0;
-    
+
+    int playerIndex = 1;
+
     do {
-    printGrid(grid);   
-    
-    GameEntityType entityType = printEntitiesAndGetType(grid);
-    GameEntity* gameEntityForBoard = gameEntityToPrint(players[playerIndex], entityType);
+        if (playerIndex == 1) {
+            playerIndex = 0; // start with player 1 (index 0)
+        }
+        else if (playerIndex == 0) {
+            playerIndex = 1;
+        }
 
-    system("clear");
-    printGrid(grid);
-    printf("Player coins: %d", players[playerIndex].coins);
-    printf("\nSelect cell in the grid: \n");
+        printGrid(grid, players[playerIndex]);
 
-    int rowNumber;
-    char columnChar;
-    int columnNumber;
+        GameEntityType entityType = printTurnOptionsAndGetEntityType(grid, players[playerIndex]); //entity type empty -> turn ended
 
-    printf("Row: ");
-    scanf("%d", &rowNumber);
+        if (entityType != Empty) {
 
-    printf("Column: ");
-    scanf(" %c", &columnChar);
+            GameEntity* gameEntityForBoard = gameEntityToPrint(players[playerIndex], entityType);
 
-    
+            system("clear");
+            printGrid(grid, players[playerIndex]);
+            printf("Player coins: %d", players[playerIndex].coins);
+            printf("\nSelect cell in the grid: \n");
 
-    columnNumber = letterToIndex(columnChar);
+            int rowNumber;
+            char columnChar;
+            int columnNumber;
 
-    placeEntity(grid, rowNumber, columnNumber, gameEntityForBoard, &players[playerIndex]);
-    system("clear");
-    printGrid(grid);
-    printf("Player coins: %d", players[playerIndex].coins);
+            printf("Row: ");
+            scanf("%d", &rowNumber);
+
+            printf("Column: ");
+            scanf(" %c", &columnChar);
+
+            columnNumber = letterToIndex(columnChar);
+
+            placeEntity(grid, rowNumber, columnNumber, gameEntityForBoard, &players[playerIndex]);
+            system("clear");
+            printGrid(grid, players[playerIndex]);
+        }
 
     } while (1);
 
@@ -269,7 +280,7 @@ void playGame(struct Cell grid[ROWS][COLS], struct Player players[MAX_PLAYERS]) 
 
     moveBuild(grid, grid[0][0], destRow, destColumn);
     snprintf(grid[1][1].gameEntity->symbol, sizeof(grid[1][1].gameEntity->symbol), "%s", "TEST2");
-    printGrid(grid);
+    printGrid(grid, players[playerIndex]);
 }
 
 void placeEntity(struct Cell grid[ROWS][COLS], int row, int column, GameEntity* gameEntity, Player* player) {
@@ -287,19 +298,21 @@ int letterToIndex(char letter) {
     return (int)(letter - 'A');
 }
 
-GameEntityType printEntitiesAndGetType(struct Cell grid[ROWS][COLS]) {
+GameEntityType printTurnOptionsAndGetEntityType(struct Cell grid[ROWS][COLS], Player player) {
     int entityTypeSelection;
     int chooseEntity;
+    GameEntityType entityType = Empty;
 
     system("clear");
-    printGrid(grid);
+    printGrid(grid, player);
 
     printf("\n1 - Select build");
     printf("\n2 - Select military unit\n");
+    printf("\n3 - End turn\n");
     scanf("%d", &entityTypeSelection);
 
     system("clear");
-    printGrid(grid);
+    printGrid(grid, player);
 
     switch (entityTypeSelection)
     {
@@ -309,6 +322,8 @@ GameEntityType printEntitiesAndGetType(struct Cell grid[ROWS][COLS]) {
     case 2:
         printMilitaryOptions();
         break;
+    case 3:
+        return entityType;
     default:
         break;
     }
@@ -316,7 +331,7 @@ GameEntityType printEntitiesAndGetType(struct Cell grid[ROWS][COLS]) {
     printf("\nSelect entity to place:\n ");
     scanf("%d", &chooseEntity);
 
-    GameEntityType entityType = selectEntitytype(entityTypeSelection, chooseEntity);
+    entityType = selectEntitytype(entityTypeSelection, chooseEntity);
     return entityType;
 }
 
@@ -362,7 +377,7 @@ GameEntityType selectEntitytype(int entityType, int userSelection) {
 }
 
 GameEntity* gameEntityToPrint(struct Player player, enum GameEntityType entityType) {
-    
+
     GameEntity* gameEntity = (struct GameEntity*)malloc(sizeof(struct GameEntity));
 
     switch (entityType)

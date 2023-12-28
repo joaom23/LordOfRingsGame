@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{bfbb0ec7-0d9f-40a0-ae1c-de1285754a35}</ProjectGuid>
-    <RootNamespace>LordOfRingsGamme</RootNamespace>
+    <ProjectGuid>{139d353e-13f9-446e-afe3-327744d8e189}</ProjectGuid>
+    <RootNamespace>LordOfRingsGame</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -127,7 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="LordOfRingsGamme.cpp" />
+    <ClCompile Include="LordOfRingsGame.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
