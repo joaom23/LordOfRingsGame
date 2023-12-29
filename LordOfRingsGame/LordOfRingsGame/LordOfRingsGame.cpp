@@ -42,8 +42,8 @@
 #define HEALTH_CAVALRY 40
 #define HEALTH_ARTILLERY 20
 
-#define MAX_PLAYERS 2
-#define MAX_COINS 100
+#define NUMBER_OF_PLAYERS 2
+#define STARTING_COINS 100
 
 struct Cell {
     struct GameEntity* gameEntity;
@@ -51,17 +51,18 @@ struct Cell {
 
 struct GameEntity {
     int health;
-    char symbol[5];
+    const char* symbol;
     int cost;
+    struct Player* player;
 };
 
-struct Building {
-    struct GameEntity gameEntity;
-};
-
-struct CombatCharacter {
-    struct GameEntity gameEntity;
-};
+//struct Building {
+//    struct GameEntity gameEntity;
+//};
+//
+//struct CombatCharacter {
+//    struct GameEntity gameEntity;
+//};
 
 struct Player {
     enum PlayerType playerType;
@@ -89,19 +90,20 @@ void displayMainMenu();
 void startNewGame();
 void initializeGrid(struct Cell grid[ROWS][COLS]);
 void printGrid(struct Cell grid[ROWS][COLS], Player player);
-void initializePlayers(struct Player players[MAX_PLAYERS]);
-void chooseSide(struct Player players[MAX_PLAYERS]);
-void playGame(struct Cell grid[ROWS][COLS], struct Player players[MAX_PLAYERS]);
+void initializePlayers(struct Player players[NUMBER_OF_PLAYERS]);
+void chooseSide(struct Player players[NUMBER_OF_PLAYERS]);
+void playGame(struct Cell grid[ROWS][COLS], struct Player players[NUMBER_OF_PLAYERS]);
 void placeEntity(struct Cell grid[ROWS][COLS], int row, int column, GameEntity* gameEntity, Player* player);
-void moveBuild(struct Cell grid[ROWS][COLS], Cell originCell, int destRow, int destColumn);
+void moveUnit(struct Cell grid[ROWS][COLS], Cell originCell, int destRow, int destColumn);
 int letterToIndex(char letter);
 void printBuildOptions();
 void printMilitaryOptions();
-GameEntity* gameEntityToPrint(struct Player player, enum GameEntityType entityType);
+GameEntity* gameEntityToPrint(struct Player* player, enum GameEntityType entityType);
 GameEntityType selectEntitytype(int entityType, int userSelection);
 GameEntityType printTurnOptionsAndGetEntityType(struct Cell grid[ROWS][COLS], Player player);
 const char* getPlayerTypeString(enum PlayerType type);
 const char* getEntityTypeString(enum GameEntityType type);
+char indexToLetter(int index);
 
 int main() {
 
@@ -118,13 +120,19 @@ int main() {
             system("cls");
             break;
         case 2:
-            printf("Load Game option selected (Not implemented yet).\n");
+            system("cls");
+            printf("TO DO\n");
+            system("pause");
+            system("cls");
             break;
         case 3:
-            printf("Settings option selected (Not implemented yet).\n");
+            system("cls");
+            printf("TO DO.\n");
+            system("pause");
+            system("cls");
             break;
         case 4:
-            printf("Exiting the game. Goodbye!\n");
+            exit(0);
             break;
         default:
             printf("Invalid choice. Please enter a valid option.\n");
@@ -136,7 +144,7 @@ int main() {
 }
 
 void displayMainMenu() {
-    printf("\n*** Lord of the Rings: Strategy Game ***\n");
+    printf("*** Lord of the Rings: Strategy Game ***\n\n");
     printf("1. Start New Game\n");
     printf("2. Load Game\n");
     printf("3. Settings\n");
@@ -145,7 +153,7 @@ void displayMainMenu() {
 
 void startNewGame() {
     struct Cell grid[ROWS][COLS];
-    struct Player players[MAX_PLAYERS];
+    struct Player players[NUMBER_OF_PLAYERS];
 
     initializeGrid(grid);
     initializePlayers(players);
@@ -191,67 +199,72 @@ void printGrid(struct Cell grid[ROWS][COLS], Player player) {
     }
     const char* playerTypeStrig = getPlayerTypeString(player.playerType);
 
-    printf("\nPlayer %s coins: %d\n", playerTypeStrig, player.coins);
+    printf("\n--- Player %s turn --- \n", playerTypeStrig);
+    printf("Caster coins : % d\n", player.coins);
 }
 
-void initializePlayers(struct Player players[MAX_PLAYERS]) {
+void initializePlayers(struct Player players[NUMBER_OF_PLAYERS]) {
 
-    for (int i = 0; i < MAX_PLAYERS; ++i) {
+    for (int i = 0; i < NUMBER_OF_PLAYERS; ++i) {
         players[i].playerType = Gondor;
-        players[i].coins = MAX_COINS;
+        players[i].coins = STARTING_COINS;
     }
 }
 
-void chooseSide(struct Player players[MAX_PLAYERS]) {
+void chooseSide(struct Player players[NUMBER_OF_PLAYERS]) {
     printf("Choose your side:\n");
     printf("1 - Gondor/Rivendell\n");
     printf("2 - Mordor\n");
 
     int choice;
-    for (int i = 0; i < MAX_PLAYERS; ++i) {
-        printf("Player %d, choose your side: ", i + 1);
-        scanf("%d", &choice);
 
-        switch (choice) {
-        case 1:
-            players[i].playerType = Gondor;
-            break;
-        case 2:
-            players[i].playerType = Mordor;
-            break;
-        default:
-            printf("Invalid choice. Default side set for Player %d.\n", i + 1);
-            break;
-        }
+    scanf("%d", &choice);
+
+    switch (choice) {
+    case 1:
+        players[0].playerType = Gondor;
+        players[1].playerType = Mordor;
+        break;
+    case 2:
+        players[0].playerType = Mordor;
+        players[1].playerType = Gondor;
+        break;
+    default:
+        break;
     }
+
+    printf("Player 1 will be playing as %s\n", getPlayerTypeString(players[0].playerType));
+    printf("Player 2 will be playing as %s\n", getPlayerTypeString(players[1].playerType));
+    printf("\n\n");
+    system("pause");
 }
 
-void playGame(struct Cell grid[ROWS][COLS], struct Player players[MAX_PLAYERS]) {
+void playGame(struct Cell grid[ROWS][COLS], struct Player players[NUMBER_OF_PLAYERS]) {
 
-    int playerIndex = 1;
-    GameEntityType entityType = Empty;
+    int playerIndex = 0;
+    GameEntityType entityTypeToPlace = Empty;
 
     do {
-        if (entityType == Empty) {
-            if (playerIndex == 1) {
-                playerIndex = 0; // start with player 1 (index 0)
-            }
-            else if (playerIndex == 0) {
-                playerIndex = 1;
-            }
-        }
-
+        system("clear");
         printGrid(grid, players[playerIndex]);
 
-        entityType = printTurnOptionsAndGetEntityType(grid, players[playerIndex]); //entity type empty -> turn ended
+        int choice;
+        printf("1 - Place entity\n");
+        printf("2 - Move unit\n");
+        printf("3 - End turn\n");
+        scanf("%d", &choice);
 
-        if (entityType != Empty) {
+        switch (choice)
+        {
+        case 1:
+        {
+            entityTypeToPlace = printTurnOptionsAndGetEntityType(grid, players[playerIndex]);
 
-            GameEntity* gameEntityForBoard = gameEntityToPrint(players[playerIndex], entityType);
+            GameEntity* gameEntityForBoard = gameEntityToPrint(&players[playerIndex], entityTypeToPlace);
 
             system("clear");
             printGrid(grid, players[playerIndex]);
-            printf("\nSelect cell in the grid to place %s, cost %d coins:\n", getEntityTypeString(entityType), gameEntityForBoard->cost);
+            printf("\nSelect cell in the grid to place %s, cost %d coins:\n", getEntityTypeString(entityTypeToPlace), gameEntityForBoard->cost);
 
             int rowNumber;
             char columnChar;
@@ -265,10 +278,89 @@ void playGame(struct Cell grid[ROWS][COLS], struct Player players[MAX_PLAYERS]) 
 
             columnNumber = letterToIndex(columnChar);
 
-            placeEntity(grid, rowNumber, columnNumber, gameEntityForBoard, &players[playerIndex]);
+            if (grid[rowNumber][columnNumber].gameEntity != NULL) {
+                printf("\nCell occupied, please select another one. Press any key to contine.\n");
+                system("pause");
+            }
+            else {
+                placeEntity(grid, rowNumber, columnNumber, gameEntityForBoard, &players[playerIndex]);
+            }
+        }
+            break;
+        case 2:
+        {
+            int unitNumberToMove;
+            int count = 1;
+            GameEntityType entityType = Empty;
+
             system("clear");
             printGrid(grid, players[playerIndex]);
+
+            printf("Available units:\n");
+
+            for (int i = 0; i < ROWS; ++i) {
+                for (int j = 0; j < COLS; ++j) {
+                    if (grid[i][j].gameEntity != NULL) {
+                        if (grid[i][j].gameEntity->player == &players[playerIndex]) {
+                            printf("%d - %s -> Row: %d  Column: %c", count, grid[i][j].gameEntity->symbol, i, indexToLetter(j));
+                        }
+                    }                    
+                }
+            }
+
+            scanf("%d", &unitNumberToMove);
+
+            /*system("clear");
+            printGrid(grid, players[playerIndex]);*/
         }
+            break;
+        case 3:
+        {
+            if (playerIndex == 1) {
+                playerIndex = 0;
+            }
+            else if (playerIndex == 0) {
+                playerIndex = 1;
+            }
+            break;
+        }
+        default:
+            break;
+        }
+
+        //entityType = printTurnOptionsAndGetEntityType(grid, players[playerIndex]); //entity type empty -> turn ended
+
+        //if (entityType != Empty) {
+
+        //    GameEntity* gameEntityForBoard = gameEntityToPrint(players[playerIndex], entityType);
+
+        //    system("clear");
+        //    printGrid(grid, players[playerIndex]);
+        //    printf("\nSelect cell in the grid to place %s, cost %d coins:\n", getEntityTypeString(entityType), gameEntityForBoard->cost);
+
+        //    int rowNumber;
+        //    char columnChar;
+        //    int columnNumber;
+
+        //    printf("Row: ");
+        //    scanf("%d", &rowNumber);
+
+        //    printf("Column: ");
+        //    scanf(" %c", &columnChar);
+
+        //    columnNumber = letterToIndex(columnChar);
+
+        //    if (grid[rowNumber][columnNumber].gameEntity != NULL) {
+        //        printf("\nCell occupied, please select another one. Press any key to contine.\n");
+        //        system("pause");
+        //    }
+        //    else {
+        //        placeEntity(grid, rowNumber, columnNumber, gameEntityForBoard, &players[playerIndex]);
+        //    }
+
+        //    system("clear");
+        //    printGrid(grid, players[playerIndex]);
+        //}
 
     } while (1);
 
@@ -283,17 +375,20 @@ void playGame(struct Cell grid[ROWS][COLS], struct Player players[MAX_PLAYERS]) 
     printf("Row: ");
     scanf("%d", &destColumn);
 
-    moveBuild(grid, grid[0][0], destRow, destColumn);
-    snprintf(grid[1][1].gameEntity->symbol, sizeof(grid[1][1].gameEntity->symbol), "%s", "TEST2");
-    printGrid(grid, players[playerIndex]);
+    moveUnit(grid, grid[0][0], destRow, destColumn);
+
 }
 
-void placeEntity(struct Cell grid[ROWS][COLS], int row, int column, GameEntity* gameEntity, Player* player) {
+
+void placeEntity(struct Cell grid[ROWS][COLS], int row, int column, GameEntity* gameEntity, Player* player) {   
     player->coins -= gameEntity->cost;
+
+    int entitySize = strlen(gameEntity->symbol);
+
     grid[row][column].gameEntity = gameEntity;
 }
 
-void moveBuild(struct Cell grid[ROWS][COLS], Cell originCell, int destRow, int destColumn) {
+void moveUnit(struct Cell grid[ROWS][COLS], Cell originCell, int destRow, int destColumn) {
     grid[destRow][destColumn].gameEntity = originCell.gameEntity;
     originCell.gameEntity = NULL;
 }
@@ -301,6 +396,13 @@ void moveBuild(struct Cell grid[ROWS][COLS], Cell originCell, int destRow, int d
 int letterToIndex(char letter) {
     letter = toupper(letter);
     return (int)(letter - 'A');
+}
+
+char indexToLetter(int index) {
+    if (index < 0 || index > 25) {
+        return '\0'; 
+    }
+    return (char)('A' + index);
 }
 
 GameEntityType printTurnOptionsAndGetEntityType(struct Cell grid[ROWS][COLS], Player player) {
@@ -313,7 +415,6 @@ GameEntityType printTurnOptionsAndGetEntityType(struct Cell grid[ROWS][COLS], Pl
 
     printf("\n1 - Select build");
     printf("\n2 - Select military unit\n");
-    printf("\n3 - End turn\n");
     scanf("%d", &entityTypeSelection);
 
     system("clear");
@@ -327,8 +428,6 @@ GameEntityType printTurnOptionsAndGetEntityType(struct Cell grid[ROWS][COLS], Pl
     case 2:
         printMilitaryOptions();
         break;
-    case 3:
-        return entityType;
     default:
         break;
     }
@@ -381,31 +480,31 @@ GameEntityType selectEntitytype(int entityType, int userSelection) {
     }
 }
 
-GameEntity* gameEntityToPrint(struct Player player, enum GameEntityType entityType) {
+GameEntity* gameEntityToPrint(struct Player* player, enum GameEntityType entityType) {
 
     GameEntity* gameEntity = (struct GameEntity*)malloc(sizeof(struct GameEntity));
-
+    gameEntity->player = player;
     switch (entityType)
     {
     case Base:
         gameEntity->health = HEALTH_BASE;
         gameEntity->cost = 30;
-        if (player.playerType == Gondor) {
-            strcpy(gameEntity->symbol, BASE_GONDOR);
+        if (player->playerType == Gondor) {
+            gameEntity->symbol = BASE_GONDOR;
         }
         else {
-            strcpy(gameEntity->symbol, BASE_MORDOR);
+            gameEntity->symbol = BASE_MORDOR;
         }
 
         break;
     case Mine:
         gameEntity->cost = 20;
         gameEntity->health = HEALTH_MINE;
-        if (player.playerType == Gondor) {
-            strcpy(gameEntity->symbol, MINES_SHIRE);
+        if (player->playerType == Gondor) {
+            gameEntity->symbol = MINES_SHIRE;
         }
         else {
-            strcpy(gameEntity->symbol, MINES_EREBOR);
+            gameEntity->symbol = MINES_EREBOR;
         }
 
         break;
@@ -413,11 +512,11 @@ GameEntity* gameEntityToPrint(struct Player player, enum GameEntityType entityTy
         gameEntity->cost = 70;
         gameEntity->health = HEALTH_BARRACK_STABLE_ARMOURY;
 
-        if (player.playerType == Gondor) {
-            strcpy(gameEntity->symbol, BARRACKS_ROHAN);
+        if (player->playerType == Gondor) {
+            gameEntity->symbol = BARRACKS_ROHAN;
         }
         else {
-            strcpy(gameEntity->symbol, BARRACKS_ISENGARD);
+            gameEntity->symbol = BARRACKS_ISENGARD;
         }
 
         break;
@@ -425,11 +524,11 @@ GameEntity* gameEntityToPrint(struct Player player, enum GameEntityType entityTy
         gameEntity->cost = 30;
         gameEntity->health = HEALTH_BARRACK_STABLE_ARMOURY;
 
-        if (player.playerType == Gondor) {
-            strcpy(gameEntity->symbol, STABLES_LOTHLORIEN);
+        if (player->playerType == Gondor) {
+            gameEntity->symbol = STABLES_LOTHLORIEN;
         }
         else {
-            strcpy(gameEntity->symbol, STABLES_MIRKWOOD);
+            gameEntity->symbol = STABLES_MIRKWOOD;
         }
 
         break;
@@ -437,11 +536,11 @@ GameEntity* gameEntityToPrint(struct Player player, enum GameEntityType entityTy
         gameEntity->health = HEALTH_BARRACK_STABLE_ARMOURY;
         gameEntity->cost = 30;
 
-        if (player.playerType == Gondor) {
-            strcpy(gameEntity->symbol, ARMOURY_GONDORIANFORGE);
+        if (player->playerType == Gondor) {
+            gameEntity->symbol = ARMOURY_GONDORIANFORGE;
         }
         else {
-            strcpy(gameEntity->symbol, ARMOURY_DARKFORGE);
+            gameEntity->symbol = ARMOURY_DARKFORGE;
         }
 
         break;
@@ -449,11 +548,11 @@ GameEntity* gameEntityToPrint(struct Player player, enum GameEntityType entityTy
         gameEntity->health = HEALTH_INFANTARY;
         gameEntity->cost = 10;
 
-        if (player.playerType == Gondor) {
-            strcpy(gameEntity->symbol, GONDOR_INFANTARY);
+        if (player->playerType == Gondor) {
+            gameEntity->symbol = GONDOR_INFANTARY;
         }
         else {
-            strcpy(gameEntity->symbol, MORDOR_INFANTARY);
+            gameEntity->symbol = MORDOR_INFANTARY;
         }
 
         break;
@@ -461,11 +560,11 @@ GameEntity* gameEntityToPrint(struct Player player, enum GameEntityType entityTy
         gameEntity->health = HEALTH_CAVALRY;
         gameEntity->cost = 15;
 
-        if (player.playerType == Gondor) {
-            strcpy(gameEntity->symbol, GONDOR_CAVALRY);
+        if (player->playerType == Gondor) {
+            gameEntity->symbol = GONDOR_CAVALRY;
         }
         else {
-            strcpy(gameEntity->symbol, GONDOR_CAVALRY);
+            gameEntity->symbol = GONDOR_CAVALRY;
         }
 
         break;
@@ -473,11 +572,11 @@ GameEntity* gameEntityToPrint(struct Player player, enum GameEntityType entityTy
         gameEntity->health = HEALTH_ARTILLERY;
         gameEntity->cost = 20;
 
-        if (player.playerType == Gondor) {
-            strcpy(gameEntity->symbol, GONDOR_ARTILLERY);
+        if (player->playerType == Gondor) {
+            gameEntity->symbol = GONDOR_ARTILLERY;
         }
         else {
-            strcpy(gameEntity->symbol, MORDOR_ARTILLERY);
+            gameEntity->symbol = MORDOR_ARTILLERY;
         }
         break;
     default:
